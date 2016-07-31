@@ -1,0 +1,56 @@
+
+body {
+  font-family: Helvetica Neue, 'Roboto', sans-serif;
+}
+
+.block-canvas {
+  width: 100px;
+  height: 100px;
+  background-color: #ff769f;
+  padding: 10px;
+  margin: 5px;
+  display:table;
+}
+
+.label {
+  font-size:170%;
+  display:table-cell;
+  vertical-align:middle;
+  text-align:center;
+}
+
+.slider-outer {
+  display:inline-block;
+  min-width: 120px;
+  position:relative;
+}
+
+.slider-bar {
+  display:block;
+  position:absolute;
+  background-color:#888;
+  height: 200px;
+  width:10px;
+  z-index:-20;
+  left: 63px;
+  top:100px;
+}
+
+.waveform-slider {
+  height:400px;
+  display:table;
+  position:relative;
+}
+
+.waveform-slider-top {
+  position:absolute;
+  top:50px;
+  z-index:10;
+}
+
+.waveform-slider-bottom {
+  display:table-cell;
+  vertical-align:bottom;
+}
+
+
