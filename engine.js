@@ -272,6 +272,7 @@ DSP.prototype.visualize = function() {
   this.canvas.height = this.HEIGHT;
   var c = this.canvas.getContext('2d');
   c.lineWidth = 2;
+  c.beginPath();
 
   var sx = 0.68;
   var viewportPeriod = this.WIDTH / sx;
