@@ -21,6 +21,7 @@ function DSP(blocksA, blocksB) {
   this.filterB = new Filter(cutoffParam, resoParam, this.context.sampleRate);
   this.driveA = new Drive(driveParam, this.context.sampleRate);
   this.driveB = new Drive(driveParam, this.context.sampleRate);
+  this.limiter = new Limiter(this.context.sampleRate);
 
   this.oscAcc = 0.0;
   this.oscFreq = 440.0;
@@ -82,6 +83,7 @@ DSP.prototype.process = function(e) {
 //    sample[1] = this.filterB.step(sample[1]);
     sample[0] = this.driveA.step(sample[0]) * 0.5;
 //    sample[1] = this.driveB.step(sample[1]) * 0.5;
+    sample[0] = this.limiter.step(sample[0]);
     sample[0] = Math.atan(sample[0]);
 //    sample[1] = Math.atan(sample[1]);
     sample[1] = sample[0];

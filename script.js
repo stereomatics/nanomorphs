@@ -22,6 +22,7 @@ WaveformBlock.prototype.updateCanvas = function() {
     var w = this.canvas.width;
     var h = this.canvas.height;
 
+    c.lineWidth = 3;
     c.beginPath();
     for (var i = 0; i < this.samples.length; i++) {
       var y = (this.samples[i] * -0.5 + 0.5) * h;
