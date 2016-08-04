@@ -42,17 +42,17 @@ WaveformBlock.prototype.getEpoch = function() {
 
 dsp = new DSP();
 
-noteParam = new Value(0.0, 127.0, 33.0, false);
-pitchParam = new Value(-1.0, 1.0, 0.0, true);
-cutoffParam = new Value(-5.0, 5.0, 5.0, true);
-resoParam = new Value(0.0, 2.0, 0.2, false);
-driveParam = new Value(0.0, 1.0, 0.29, false);
-forceParam = new Value(0.0, 1.0, 0.0, false);
+noteParam = new Value(dsp, 0.0, 127.0, 33.0, false);
+pitchParam = new Value(dsp, -1.0, 1.0, 0.0, true);
+cutoffParam = new Value(dsp, -5.0, 5.0, 5.0, true);
+resoParam = new Value(dsp, 0.0, 2.0, 0.2, false);
+driveParam = new Value(dsp, 0.0, 1.0, 0.29, false);
+forceParam = new Value(dsp, 0.0, 1.0, 0.0, false);
 
-waveformMorph1 = new Value(0.0, 1.0, 0.0);
-waveformMorph2 = new Value(0.0, 1.0, 0.0);
-waveformMorph3 = new Value(0.0, 1.0, 0.0);
-waveformMorph4 = new Value(0.0, 1.0, 0.0);
+waveformMorph1 = new Value(dsp, 0.0, 1.0, 0.0);
+waveformMorph2 = new Value(dsp, 0.0, 1.0, 0.0);
+waveformMorph3 = new Value(dsp, 0.0, 1.0, 0.0);
+waveformMorph4 = new Value(dsp, 0.0, 1.0, 0.0);
 
 cutoffSlider = new Slider(dsp, cutoffParam, false, 'cutoffSlider');
 resoSlider = new Slider(dsp, resoParam, false, 'resoSlider');

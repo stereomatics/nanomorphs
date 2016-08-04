@@ -3,21 +3,13 @@ function DSP() {
   this.blocksA = [];
   this.blocksB = [];
 
-  this.noteTriggered = false;
-  this.noteTriggeredTarget = false;
+  this.active = false;
+  this.paintScheduled = false;
 
   this.wavetableA = [];
   this.wavetableB = [];
   this.morphParams = [];
 
-  this.sampleRate = 44100;
-  this.oscAcc = 0.0;
-  this.oscFreq = 440.0;
-
-  this.probeAcc = 0.0;
-  this.probeSlope = 1.0;
-  this.probeA = 0.0;
-  this.probeB = 0.0;
   this.brandLeft = document.getElementById('brand-left');
   this.brandRight = document.getElementById('brand-right');
 
@@ -26,8 +18,9 @@ function DSP() {
   this.HEIGHT = this.canvas.height;
 
   this.scopeSamples = new Float64Array(1024*16);
-  this.scopeWritePos = 0;
-  window.setTimeout(this.visualize.bind(this), 1000 / 60);
+  this.reset();
+
+  this.schedulePaint();
 }
 
 DSP.prototype.setBlocks = function(blocksA, blocksB, morphParams) {
@@ -38,18 +31,72 @@ DSP.prototype.setBlocks = function(blocksA, blocksB, morphParams) {
 
 DSP.prototype.checkStart = function() {
   if (this.context) {
+    if (this.shouldRunOsc()) {
+      this.start();
+    }
     return;
   }
   this.context = new (window.AudioContext || window.webkitAudioContext)();
   this.node = this.context.createScriptProcessor(1024, 1, 2);
   this.node.onaudioprocess = this.process.bind(this);
-  this.node.connect(this.context.destination);
 
   this.filterA = new Filter(cutoffParam, resoParam, this.context.sampleRate);
   this.filterB = new Filter(cutoffParam, resoParam, this.context.sampleRate);
   this.driveA = new Drive(driveParam, this.context.sampleRate);
   this.driveB = new Drive(driveParam, this.context.sampleRate);
   this.limiter = new Limiter(this.context.sampleRate);
+
+  this.start();
+}
+
+DSP.prototype.start = function() {
+  if (this.active) {
+    return;
+  }
+  this.active = true;
+  this.node.connect(this.context.destination);
+  this.schedulePaint();
+}
+
+DSP.prototype.stop = function() {
+  if (!this.active) {
+    return;
+  }
+  this.active = false;
+  this.node.disconnect();
+  this.reset();
+}
+
+DSP.prototype.isActive = function() {
+  return this.active;
+}
+
+DSP.prototype.reset = function() {
+  this.silent = true;
+  this.probeAcc = 0.0;
+  this.probeSlope = 1.0;
+  this.probeA = 0.0;
+  this.probeB = 0.0;
+  this.scopeWritePos = 0;
+  this.sampleRate = 44100;
+  this.oscAcc = 0.0;
+  this.oscFreq = 440.0;
+
+  for (var i = 0; i < this.scopeSamples.length; i++) {
+    this.scopeSamples[i] = 0.0;
+  }
+}
+
+DSP.prototype.shouldRunOsc = function() {
+  return pitchParam.isInEdit() || forceParam.getValue() > 0.5;
+}
+
+DSP.prototype.schedulePaint = function() {
+  if (this.paintScheduled) {
+    return;
+  }
+  this.paintScheduled = true;
+  window.setTimeout(this.visualize.bind(this), 1000 / 60);
 }
 
 DSP.prototype.process = function(e) {
@@ -60,9 +107,10 @@ DSP.prototype.process = function(e) {
   var R = e.outputBuffer.getChannelData(1);
   var sample = [0.0, 0.0];
 
-  if (pitchParam.isInEdit() != this.noteTriggeredTarget) {
-    this.noteTriggeredTarget = pitchParam.isInEdit();
-    this.noteTriggered = this.noteTriggeredTarget;
+  var runOsc = this.shouldRunOsc();
+  var silent = this.silent;
+  if (runOsc) {
+    silent = false;
   }
 
   var wavetableAEpoch = this.getWavetableEpoch(this.blocksA);
@@ -83,22 +131,32 @@ DSP.prototype.process = function(e) {
     for (var j = 0; j < activeValues.length; j++) {
       activeValues[j].processValue();
     }
-    if (this.noteTriggered || forceParam.getValue() > 0.5) {
-      this.generateSample(sample);
+    if (!silent) {
+      var nowSilent = true;
+      if (runOsc) {
+        this.generateSample(sample);
+        nowSilent = false;
+      } else {
+        sample[0] = 0.0;
+        sample[1] = 0.0;
+      }
+      sample[0] = this.filterA.step(sample[0] * 0.5, nowSilent);
+      nowSilent = nowSilent && this.filterA.isSilent();
+      sample[0] = this.driveA.step(sample[0], nowSilent) * 0.5;
+      nowSilent = nowSilent && this.driveA.isSilent();
+      sample[0] = this.limiter.step(sample[0], nowSilent);
+      nowSilent = nowSilent && this.limiter.isSilent();
+      sample[0] = Math.atan(sample[0]);
+      sample[1] = sample[0];
+      L[i] = sample[0];
+      R[i] = sample[1];
+      if (nowSilent) {
+        silent = true;
+      }
     } else {
-      sample[0] = 0.0;
-      sample[1] = 0.0;
+      L[i] = 0.0;
+      R[i] = 0.0;
     }
-    sample[0] = this.filterA.step(sample[0] * 0.5);
-//    sample[1] = this.filterB.step(sample[1] * 0.5);
-    sample[0] = this.driveA.step(sample[0]) * 0.5;
-//    sample[1] = this.driveB.step(sample[1]) * 0.5;
-    sample[0] = this.limiter.step(sample[0]);
-    sample[0] = Math.atan(sample[0]);
-//    sample[1] = Math.atan(sample[1]);
-    sample[1] = sample[0];
-    L[i] = sample[0];
-    R[i] = sample[1];
 
     var scopeSample = (sample[0] + sample[1]) * 0.5;
 
@@ -115,6 +173,10 @@ DSP.prototype.process = function(e) {
     if (this.scopeWritePos >= this.scopeSamples.length) {
       this.scopeWritePos = 0;
     }
+  }
+  this.silent = silent;
+  if (silent) {
+    this.stop();
   }
 };
 
@@ -284,6 +346,7 @@ DSP.prototype.sampleWavetable = function(wavetable, level, pos) {
 
 
 DSP.prototype.visualize = function() {
+  this.paintScheduled = false;
   this.canvas.width = this.WIDTH;
   this.canvas.height = this.HEIGHT;
   var c = this.canvas.getContext('2d');
@@ -312,7 +375,9 @@ DSP.prototype.visualize = function() {
   this.brandRight.style.left = 100 * this.probeB + "px";
   this.brandRight.style.top = 100 * this.probeA + "px";
 
-  window.setTimeout(this.visualize.bind(this), 1000 / 60);
+  if (this.active) {
+    this.schedulePaint();
+  }
 }
 
 

@@ -27,9 +27,10 @@ function Drive(driveParam, sampleRate) {
   this.driveParam = driveParam;
   this.integrator = new FastScalarLowPassFilter(112, sampleRate);
   this.analogCircuit = new AnalogCircuit(sampleRate);
+  this.silent = false;
 }
 
-Drive.prototype.step = function(input) {
+Drive.prototype.step = function(input, isInputSilent) {
   var PreAmp = 1.0 / 10;
   var PreAmpInverse = 1/PreAmp;
   var SaturationHeadroom = 5.0 / 7;
@@ -73,8 +74,13 @@ Drive.prototype.step = function(input) {
 
   output = output*(1.0-alpha) + this.analogCircuit.step(output)*alpha;
 
+  this.silent = isInputSilent;
   return output;
 };
+
+Drive.prototype.isSilent = function() {
+  return this.silent;
+}
 
 Drive.prototype.hardLimit = function(input) {
   return Math.atan(input);
