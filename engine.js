@@ -1,28 +1,16 @@
 
-
-
-function DSP(blocksA, blocksB) {
-  this.blocksA = blocksA;
-  this.blocksB = blocksB;
-
-  this.context = new (window.AudioContext || window.webkitAudioContext)();
-  this.node = this.context.createScriptProcessor(1024, 1, 2);
-  this.node.onaudioprocess = this.process.bind(this);
-  this.node.connect(this.context.destination);
+function DSP() {
+  this.blocksA = [];
+  this.blocksB = [];
 
   this.noteTriggered = false;
   this.noteTriggeredTarget = false;
 
   this.wavetableA = [];
   this.wavetableB = [];
-  this.morphParams = [waveformMorph1, waveformMorph2, waveformMorph3, waveformMorph4];
+  this.morphParams = [];
 
-  this.filterA = new Filter(cutoffParam, resoParam, this.context.sampleRate);
-  this.filterB = new Filter(cutoffParam, resoParam, this.context.sampleRate);
-  this.driveA = new Drive(driveParam, this.context.sampleRate);
-  this.driveB = new Drive(driveParam, this.context.sampleRate);
-  this.limiter = new Limiter(this.context.sampleRate);
-
+  this.sampleRate = 44100;
   this.oscAcc = 0.0;
   this.oscFreq = 440.0;
 
@@ -37,15 +25,37 @@ function DSP(blocksA, blocksB) {
   this.WIDTH = this.canvas.width;
   this.HEIGHT = this.canvas.height;
 
-  this.scopeSamples = [];
+  this.scopeSamples = new Float64Array(1024*16);
   this.scopeWritePos = 0;
-  for (var i = 0; i < 1024*16; i++) {
-    this.scopeSamples.push(0.0);
-  }
   window.setTimeout(this.visualize.bind(this), 1000 / 60);
 }
 
+DSP.prototype.setBlocks = function(blocksA, blocksB, morphParams) {
+  this.blocksA = blocksA;
+  this.blocksB = blocksB;
+  this.morphParams = morphParams;
+}
+
+DSP.prototype.checkStart = function() {
+  if (this.context) {
+    return;
+  }
+  this.context = new (window.AudioContext || window.webkitAudioContext)();
+  this.node = this.context.createScriptProcessor(1024, 1, 2);
+  this.node.onaudioprocess = this.process.bind(this);
+  this.node.connect(this.context.destination);
+
+  this.filterA = new Filter(cutoffParam, resoParam, this.context.sampleRate);
+  this.filterB = new Filter(cutoffParam, resoParam, this.context.sampleRate);
+  this.driveA = new Drive(driveParam, this.context.sampleRate);
+  this.driveB = new Drive(driveParam, this.context.sampleRate);
+  this.limiter = new Limiter(this.context.sampleRate);
+}
+
 DSP.prototype.process = function(e) {
+  if (!this.context) {
+    return;
+  }
   var L = e.outputBuffer.getChannelData(0);
   var R = e.outputBuffer.getChannelData(1);
   var sample = [0.0, 0.0];
@@ -79,8 +89,8 @@ DSP.prototype.process = function(e) {
       sample[0] = 0.0;
       sample[1] = 0.0;
     }
-    sample[0] = this.filterA.step(sample[0]);
-//    sample[1] = this.filterB.step(sample[1]);
+    sample[0] = this.filterA.step(sample[0] * 0.5);
+//    sample[1] = this.filterB.step(sample[1] * 0.5);
     sample[0] = this.driveA.step(sample[0]) * 0.5;
 //    sample[1] = this.driveB.step(sample[1]) * 0.5;
     sample[0] = this.limiter.step(sample[0]);
@@ -162,9 +172,16 @@ DSP.prototype.compareWavetableEpoch = function(key1, key2) {
 }
 
 DSP.prototype.generateBaseWaveform = function(blocks) {
-  var wavetable = [];
+  var wavetableLength = 0;
   for (var i = 0; i < blocks.length; i++) {
-    wavetable = wavetable.concat(blocks[i].samples);
+    wavetableLength += blocks[i].samples.length;
+  }
+  var wavetable = new Float64Array(wavetableLength);
+  var wavetablePos = 0;
+  for (var i = 0; i < blocks.length; i++) {
+    for (var j = 0; j < blocks[i].samples.length; j++) {
+      wavetable[wavetablePos++] = blocks[i].samples[j];
+    }
   }
   return wavetable;
 }
@@ -183,10 +200,7 @@ DSP.prototype.interpolate4 = function(wavetable) {
   var kKernelValue11 = 0.007355926047 / kKernelGain;
 
   var newLength = wavetable.length * 4;
-  var newWavetable = [];
-  for (var i = 0; i < newLength; i++) {
-    newWavetable.push(0.0);
-  }
+  var newWavetable = new Float64Array(newLength);
   for (var i = 0; i < wavetable.length; i++) {
     var outputPos = i * 4;
     var input = wavetable[i];
@@ -227,10 +241,10 @@ DSP.prototype.halfsample = function(wavetable) {
   var kKernelValue11 = 0.007355926047 / kKernelGain;
 
   var newLength = Math.floor(wavetable.length / 2);
-  var newWavetable = [];
+  var newWavetable = new Float64Array(newLength);
   for (var newPos = 0; newPos < newLength; newPos++) {
     var inputPos = newPos * 2 - 1;
-    var output =-
+    var output =
         wavetable[(inputPos + 0 + wavetable.length) % wavetable.length] * kKernelValue00
         + wavetable[(inputPos + 1 + wavetable.length) % wavetable.length] * kKernelValue01
         + wavetable[(inputPos + 2 + wavetable.length) % wavetable.length] * kKernelValue02
@@ -251,7 +265,7 @@ DSP.prototype.halfsample = function(wavetable) {
         + wavetable[(inputPos - 10 + wavetable.length) % wavetable.length] * kKernelValue10
         + wavetable[(inputPos - 11 + wavetable.length) % wavetable.length] * kKernelValue11;
 
-    newWavetable.push(output);
+    newWavetable[newPos] = output;
   }
   return newWavetable;
 }
