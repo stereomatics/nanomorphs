@@ -39,7 +39,7 @@ function Filter(cutoffParam, resoParam, sampleRate) {
   this.frequencySmoother = new FastScalarLowPassFilter(5.0, sampleRate);
 }
 
-Filter.prototype.step = function(input) {
+Filter.prototype.step = function(input, isInputSilent) {
   var paramDataDriveAmount = 1.0;
   var paramDataDrivePreamp = 1.0;
   var paramDataDrivePreampInv = 1.0 / paramDataDrivePreamp;
@@ -113,6 +113,13 @@ Filter.prototype.step = function(input) {
   var output = y4;
   return output;
 };
+
+Filter.prototype.isSilent = function() {
+  return Math.abs(this.history1) < 0.0000000001 &&
+      Math.abs(this.history2) < 0.0000000001 &&
+      Math.abs(this.history3) < 0.0000000001 &&
+      Math.abs(this.history4) < 0.0000000001;
+}
 
 Filter.prototype.hardLimit = function(input) {
   return Math.atan(input);

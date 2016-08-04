@@ -5,12 +5,13 @@ function Limiter(sampleRate) {
   this.peakAttack = 1.0 / (sampleRate * 0.0008);
   this.rmsAcc = 0.0;
   this.gainReduction = 0.0;
-  this.history = new Float64Array(this.historyLength);
   this.historyLength = Math.max(1, Math.floor(0.005 * sampleRate));
+  this.history = new Float64Array(this.historyLength);
   this.historyPos = 0;
+  this.silent = false;
 }
 
-Limiter.prototype.step = function(input) {
+Limiter.prototype.step = function(input, isInputSilent) {
   var historyValue = this.history[this.historyPos];
   var inputSq = input*input;
   this.history[this.historyPos] = inputSq;
@@ -36,5 +37,10 @@ Limiter.prototype.step = function(input) {
     this.gainReduction = this.gainReduction * (1.0 - this.peakAttack) + (peak - 1.0) * this.peakAttack;
     thresholdLevel = 1.0 + this.gainReduction;
   }
+  this.silent = isInputSilent;
   return input / thresholdLevel;
 };
+
+Limiter.prototype.isSilent = function() {
+  return this.silent;
+}

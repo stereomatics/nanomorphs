@@ -1,7 +1,8 @@
 
 var activeValues = [];
 
-function Value(minValue, maxValue, defaultValue, momentary) {
+function Value(dsp, minValue, maxValue, defaultValue, momentary) {
+    this.dsp = dsp;
     this.minValue = minValue;
     this.maxValue = maxValue;
     this.defaultValue = defaultValue;
@@ -30,7 +31,10 @@ Value.prototype.editValue = function(value) {
     this.startValue = this.value;
     this.floatTime = 0;
     this.targetValue = value;
-    if (!this.isFloating) {
+    if (!this.dsp.isActive()) {
+        this.isFloating = false;
+        this.value = this.targetValue;
+    } else if (!this.isFloating) {
         this.isFloating = true;
         activeValues.push(this);
     }
