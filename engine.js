@@ -140,7 +140,7 @@ DSP.prototype.process = function(e) {
         sample[0] = 0.0;
         sample[1] = 0.0;
       }
-      sample[0] = this.filterA.step(sample[0] * 0.5, nowSilent);
+      sample[0] = this.filterA.step(sample[0] * 0.8, nowSilent);
       nowSilent = nowSilent && this.filterA.isSilent();
       sample[0] = this.driveA.step(sample[0], nowSilent) * 0.5;
       nowSilent = nowSilent && this.driveA.isSilent();
@@ -249,7 +249,7 @@ DSP.prototype.generateBaseWaveform = function(blocks) {
 }
 
 DSP.prototype.interpolate4 = function(wavetable) {
-  var kKernelGain = 2.0;
+  var kKernelGain = 1.0;
   var kKernelValue00 = 1 / kKernelGain;
   var kKernelValue01 = 0.8900670517 / kKernelGain;
   var kKernelValue02 = 0.6079271019 / kKernelGain;
@@ -290,7 +290,7 @@ DSP.prototype.interpolate4 = function(wavetable) {
 }
 
 DSP.prototype.halfsample = function(wavetable) {
-  var kKernelGain = 2.0;
+  var kKernelGain = 4.0;
   var kKernelValue00 = 1 / kKernelGain;
   var kKernelValue01 = 0.8900670517 / kKernelGain;
   var kKernelValue02 = 0.6079271019 / kKernelGain;
