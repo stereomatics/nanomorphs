@@ -46,7 +46,7 @@ var runFunction = function() {
   noteParam = new Value(dsp, 0, 0.0, 127.0, 33.0, false);
   pitchParam = new Value(dsp, 1, -1.0, 1.0, 0.0, true);
   cutoffParam = new Value(dsp, 2, -5.0, 5.0, 5.0, true);
-  resoParam = new Value(dsp, 3, 0.0, 2.0, 0.2, false);
+  resoParam = new Value(dsp, 3, 0.0, 2.0, 0.35, false);
   driveParam = new Value(dsp, 4, 0.0, 1.0, 0.29, false);
   forceParam = new Value(dsp, 5, 0.0, 1.0, 0.0, false);
 
