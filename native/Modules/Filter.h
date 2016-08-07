@@ -32,7 +32,7 @@ public:
 		FLOAT paramDataDrivePreamp = 1.0;
 		FLOAT paramDataDrivePreampInv = 1.0 / paramDataDrivePreamp;
 		FLOAT paramDataLinearFrequency = fCutoffParam->GetValue();
-		FLOAT paramDataBaseQ = Math::FastSqrt(fResoParam->GetValue() * 0.5);
+		FLOAT paramDataBaseQ = Math::FastLog2(1.0 + fResoParam->GetValue() * 0.5);
 
 		FLOAT HighFrequencyOctaves = 12.1066666666;
 		FLOAT powValue = Math::FastPow2((paramDataLinearFrequency + 5) * HighFrequencyOctaves / 10);
@@ -78,7 +78,7 @@ public:
 		FLOAT ybpsat = HardLimit(feedbackOutput*BandpassSaturatePower) * InvBandpassSaturatePower;
 		feedbackOutput = feedbackOutput + (feedbackOutput - ybpsat) * 2.31;
 
-		FLOAT FeedbackSaturatePower = 0.510;
+		FLOAT FeedbackSaturatePower = 0.580;
 		FLOAT InvFeedbackSaturatePower = 1.0 / FeedbackSaturatePower;
 		feedbackOutput = HardLimit(feedbackOutput*FeedbackSaturatePower * paramDataDrivePreamp) * InvFeedbackSaturatePower * paramDataDrivePreampInv;
 
@@ -103,10 +103,10 @@ public:
 	}
 
 	bool IsSilent() const {
-	  return std::abs(fHistory1) < 0.0000000001 &&
-		  std::abs(fHistory2) < 0.0000000001 &&
-		  std::abs(fHistory3) < 0.0000000001 &&
-		  std::abs(fHistory4) < 0.0000000001;
+		return std::abs(fHistory1) < 0.00001 &&
+			std::abs(fHistory2) < 0.00001 &&
+			std::abs(fHistory3) < 0.00001 &&
+			std::abs(fHistory4) < 0.00001;
 	}
 
 private:
