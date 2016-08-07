@@ -207,7 +207,6 @@ void DSP::GenerateSamples(int count) {
 	for (auto it = fActiveParams.begin(); it != fActiveParams.end();) {
 		if (!(*it)->IsActive()) {
 			it = fActiveParams.erase(it);
-			break;
 		} else {
 			++it;
 		}
