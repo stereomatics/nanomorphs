@@ -133,7 +133,6 @@ Slider.prototype.touchEnd = function(evt) {
 };
 
 Slider.prototype.touchCancel = function(evt) {
-  evt.preventDefault();
   for (var i = 0; i < evt.changedTouches.length; i++) {
     if (evt.changedTouches[i].identifier == this.dragId) {
       this.dragEnd();
