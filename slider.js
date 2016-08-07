@@ -15,6 +15,7 @@ function Slider(dsp, value, inverted, sliderId, handleId) {
 
   this.dragDown = false;
   this.dragId = 0;
+  this.dragIds = {};
   this.dragStartValue = 0.0;
   this.dragDelta = 0.0;
   this.dragPrevMouseY = 0.0;
@@ -41,10 +42,17 @@ Slider.prototype.valueEdited = function() {
 
 Slider.prototype.dragStart = function(pageX, pageY, touchId) {
   if (this.dragDown) {
+    if (touchId != undefined) {
+      this.dragIds[touchId] = 1;
+    }
     return;
   }
   this.dragDown = true;
   this.dragId = touchId;
+  this.dragIds = {};
+  if (this.dragId != undefined) {
+    this.dragIds[this.dragId] = 1;
+  }
   this.dragPrevMouseY = pageY;
   this.dragDelta = 0.0;
   this.dragStartValue = this.value.getTargetValue();
@@ -72,6 +80,38 @@ Slider.prototype.dragEnd = function(pageX, pageY) {
   this.value.endEdit();
 }
 
+Slider.prototype.dragSwitchOrEnd = function(touches) {
+  if (!this.dragDown) {
+    return;
+  }
+  if (this.dragId == undefined) {
+    this.dragEnd();
+    return;
+  }
+  delete this.dragIds[this.dragId];
+  var hadProp = false;
+  var nextDragId = 0;
+  for (var prop in this.dragIds) {
+    hadProp = true;
+    nextDragId = prop;
+    break;
+  }
+  if (!hadProp) {
+    this.dragEnd();
+    return;
+  }
+  for (var i = 0; i < touches.length; i++) {
+    if (this.dragIds[touches[i].identifier] != undefined) {
+      // Switch to this touch.
+      var touch = touches[i];
+      this.dragId = touch.identifier;
+      this.dragPrevMouseY = touch.pageY;
+      return;
+    }
+  }
+  this.dragEnd();
+};
+
 Slider.prototype.touchStart = function(evt) {
   evt.preventDefault();
   this.dragStart(evt.changedTouches[0].pageX, evt.changedTouches[0].pageY, evt.changedTouches[0].identifier);
@@ -89,7 +129,7 @@ Slider.prototype.touchMove = function(evt) {
   if (index < 0) {
     return;
   }
-  this.dragMove(evt.touches[index].pageX, evt.touches[index].pageY)
+  this.dragMove(evt.touches[index].pageX, evt.touches[index].pageY);
 };
 
 Slider.prototype.mouseDown = function(evt) {
@@ -126,7 +166,7 @@ Slider.prototype.touchEnd = function(evt) {
   evt.preventDefault();
   for (var i = 0; i < evt.changedTouches.length; i++) {
     if (evt.changedTouches[i].identifier == this.dragId) {
-      this.dragEnd();
+      this.dragSwitchOrEnd(evt.touches);
       break;
     }
   }
